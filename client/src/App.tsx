@@ -167,7 +167,7 @@ function App() {
         });
 
         const newAnswer: Answer = {
-          id: Date.now().toString(),
+          id: `${question.id}-${horseId}`,
           questionId: question.id,
           horseId,
           content: result.answer,
