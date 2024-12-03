@@ -1,21 +1,16 @@
 import { useState, useEffect } from "react";
 import {
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
-  Box,
   Button,
   Container,
-  Paper,
+  CssBaseline,
   Stack,
-  styled,
   ThemeProvider,
   createTheme,
-  CssBaseline,
 } from "@mui/material";
 import { Answer, GameState, Horse, MODEL_OPTIONS, Question } from "./types";
+import RaceTrack from "./components/RaceTrack";
+import HorseSelector from "./components/HorseSelector";
+import QAContainer from "./components/QAContainer";
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -30,53 +25,6 @@ const darkTheme = createTheme({
     },
   },
 });
-
-// Styled components using MUI's styled utility
-const RaceTrack = styled(Paper)(({ theme }) => ({
-  display: "grid",
-  gridTemplateColumns: "repeat(11, 80px)",
-  gridTemplateRows: "repeat(4, 80px)",
-  gap: 2,
-  padding: theme.spacing(2),
-  backgroundColor: theme.palette.background.paper,
-  marginBottom: theme.spacing(3),
-  border: `1px solid ${theme.palette.divider}`,
-}));
-
-const HorseCell = styled(Box)(({ theme }) => ({
-  width: 70,
-  height: 70,
-  backgroundColor: theme.palette.background.default,
-  borderRadius: "50%",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  transition: "all 0.3s ease",
-  border: `1px solid ${theme.palette.divider}`,
-}));
-
-const HorseContent = styled(Box)({
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 2,
-});
-
-const HorseName = styled(Box)({
-  fontSize: "0.6em",
-  maxWidth: 60,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-});
-
-// Add this styled component after the other styled components
-const QAContainer = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
-  marginTop: theme.spacing(3),
-  width: "100%",
-  maxWidth: 1200,
-}));
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -217,7 +165,6 @@ function App() {
   };
 
   const handleNameChange = async (horseId: number, newValue: string) => {
-    // Check if model is already selected by another horse
     if (
       gameState.horses.some(
         (horse) => horse.id !== horseId && horse.modelValue === newValue
@@ -231,7 +178,6 @@ function App() {
     );
 
     if (selectedModel) {
-      // Update local state only
       setGameState((prev) => ({
         ...prev,
         horses: prev.horses.map((h) =>
@@ -256,66 +202,12 @@ function App() {
       <CssBaseline />
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Stack spacing={3} alignItems="center">
-          <RaceTrack elevation={3}>
-            {/* Horses */}
-            {gameState.horses?.map((horse) => (
-              <HorseCell
-                key={horse.id}
-                sx={{
-                  gridRow: horse.id + 1,
-                  gridColumn: horse.position + 1,
-                  opacity: horse.isProcessing ? 0.5 : 1,
-                }}
-              >
-                <HorseContent>
-                  <Box sx={{ fontSize: "2em" }}>{horse.emoji}</Box>
-                  <HorseName>{horse.name || "Unnamed"}</HorseName>
-                </HorseContent>
-              </HorseCell>
-            ))}
-          </RaceTrack>
-
-          {/* Controls */}
-          <Stack
-            direction="row"
-            spacing={2}
-            flexWrap="wrap"
-            justifyContent="center"
-            sx={{ maxWidth: 1200, gap: 2 }}
-          >
-            {gameState.horses?.map((horse) => (
-              <Stack key={horse.id} spacing={2} alignItems="center">
-                <FormControl sx={{ minWidth: 200 }}>
-                  <InputLabel id={`horse-${horse.id}-label`}>
-                    Select Model
-                  </InputLabel>
-                  <Select
-                    labelId={`horse-${horse.id}-label`}
-                    value={horse.modelValue}
-                    label="Select Model"
-                    onChange={(e: SelectChangeEvent) =>
-                      handleNameChange(horse.id, e.target.value)
-                    }
-                    disabled={isRaceStarted}
-                  >
-                    {MODEL_OPTIONS.map((model) => (
-                      <MenuItem
-                        key={model.value}
-                        value={model.value}
-                        disabled={gameState.horses.some(
-                          (h) =>
-                            h.id !== horse.id && h.modelValue === model.value
-                        )}
-                      >
-                        {model.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Stack>
-            ))}
-          </Stack>
-
+          <RaceTrack horses={gameState.horses} />
+          <HorseSelector
+            horses={gameState.horses}
+            isRaceStarted={isRaceStarted}
+            onNameChange={handleNameChange}
+          />
           {!isRaceStarted && (
             <Button
               variant="contained"
@@ -328,42 +220,11 @@ function App() {
               Start Race
             </Button>
           )}
-
-          {/* New Questions & Answers section */}
-          <QAContainer elevation={3}>
-            <Stack spacing={2}>
-              {gameState.questions.map((question, index) => {
-                const answers = gameState.answers.filter(
-                  (a) => a.questionId === question.id
-                );
-                return (
-                  <Box key={question.id}>
-                    <Box sx={{ fontWeight: "bold", mb: 1 }}>
-                      Question {index + 1}: {question.text}
-                    </Box>
-                    {answers.length > 0 ? (
-                      answers.map((answer) => (
-                        <Box
-                          key={answer.id}
-                          sx={{ pl: 2, color: "text.secondary" }}
-                        >
-                          Answer from{" "}
-                          {gameState.horses.find(
-                            (horse) => horse.id === answer.horseId
-                          )?.name || "Unknown Horse"}
-                          : {answer.content}
-                        </Box>
-                      ))
-                    ) : (
-                      <Box sx={{ pl: 2, color: "text.secondary" }}>
-                        No answers yet.
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Stack>
-          </QAContainer>
+          <QAContainer
+            questions={gameState.questions}
+            answers={gameState.answers}
+            horses={gameState.horses}
+          />
         </Stack>
       </Container>
     </ThemeProvider>
