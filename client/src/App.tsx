@@ -102,8 +102,11 @@ function App() {
     currentColumn: 0,
   });
 
+  const [isRaceStarted, setIsRaceStarted] = useState(false);
+
   useEffect(() => {
-    // Setup WebSocket only for broadcasting state changes to other clients
+    if (!isRaceStarted) return;
+
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsHost =
       process.env.NODE_ENV === "development"
@@ -120,7 +123,23 @@ function App() {
         ws.close();
       }
     };
-  }, []);
+  }, [isRaceStarted]);
+
+  useEffect(() => {
+    if (!isRaceStarted) return;
+
+    // Try to submit answers for all horses that aren't processing and haven't finished
+    gameState.horses.forEach((horse) => {
+      if (!horse.isProcessing && horse.position <= 9) {
+        const currentQuestion = gameState.questions.find(
+          (q) => q.column === horse.position
+        );
+        if (currentQuestion) {
+          submitAnswer(horse.id, currentQuestion.id);
+        }
+      }
+    });
+  }, [isRaceStarted, gameState.horses]);
 
   const submitAnswer = async (horseId: number, questionId: string) => {
     const horse = gameState.horses.find((h) => h.id === horseId);
@@ -159,7 +178,7 @@ function App() {
         const newHorses = prev.horses.map((h) => {
           if (h.id === horseId) {
             const newPosition = result.approved
-              ? Math.min(h.position + 1, 9)
+              ? Math.min(h.position + 1, 10)
               : Math.max(h.position - 1, 0);
             return { ...h, position: newPosition, isProcessing: false };
           }
@@ -223,6 +242,10 @@ function App() {
     }
   };
 
+  const canStartRace = () => {
+    return gameState.horses.every((horse) => horse.modelValue);
+  };
+
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
@@ -268,6 +291,7 @@ function App() {
                     onChange={(e: SelectChangeEvent) =>
                       handleNameChange(horse.id, e.target.value)
                     }
+                    disabled={isRaceStarted}
                   >
                     {MODEL_OPTIONS.map((model) => (
                       <MenuItem
@@ -283,35 +307,22 @@ function App() {
                     ))}
                   </Select>
                 </FormControl>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => {
-                    const currentQuestion = gameState.questions.find(
-                      (q) => q.column === horse.position
-                    );
-                    if (currentQuestion) {
-                      submitAnswer(horse.id, currentQuestion.id);
-                    }
-                  }}
-                  disabled={
-                    horse.position >= 9 ||
-                    horse.isProcessing ||
-                    !horse.modelValue
-                  }
-                  sx={{
-                    minWidth: 120,
-                    "&:disabled": {
-                      backgroundColor: "rgba(144, 202, 249, 0.12)",
-                      color: "rgba(255, 255, 255, 0.3)",
-                    },
-                  }}
-                >
-                  {horse.isProcessing ? "Thinking..." : "Answer Question"}
-                </Button>
               </Stack>
             ))}
           </Stack>
+
+          {!isRaceStarted && (
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={() => setIsRaceStarted(true)}
+              disabled={!canStartRace()}
+              sx={{ mt: 2 }}
+            >
+              Start Race
+            </Button>
+          )}
 
           {/* New Questions & Answers section */}
           <QAContainer elevation={3}>
