@@ -124,7 +124,6 @@ function App() {
 
   const submitAnswer = async (horseId: number, questionId: string) => {
     const horse = gameState.horses.find((h) => h.id === horseId);
-    console.log("Attempting to submit answer:", { horseId, questionId, horse });
 
     if (!horse?.modelValue || horse.isProcessing) {
       console.log("Submission blocked:", {
@@ -142,7 +141,6 @@ function App() {
         ),
       }));
 
-      console.log("Sending request to server...");
       const response = await fetch("/api/submit-answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -156,10 +154,8 @@ function App() {
       if (!response.ok) throw new Error("Failed to submit answer");
 
       const result = await response.json();
-      console.log("Received response:", result);
 
       setGameState((prev) => {
-        console.log("Updating state with new answer");
         const newHorses = prev.horses.map((h) => {
           if (h.id === horseId) {
             const newPosition = result.approved
@@ -179,7 +175,6 @@ function App() {
           timestamp: new Date().toISOString(),
         };
 
-        console.log("New answer being added:", newAnswer);
         return {
           ...prev,
           horses: newHorses,
