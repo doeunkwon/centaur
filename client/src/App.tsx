@@ -34,7 +34,7 @@ const darkTheme = createTheme({
 // Styled components using MUI's styled utility
 const RaceTrack = styled(Paper)(({ theme }) => ({
   display: "grid",
-  gridTemplateColumns: "repeat(10, 80px)",
+  gridTemplateColumns: "repeat(11, 80px)",
   gridTemplateRows: "repeat(4, 80px)",
   gap: 2,
   padding: theme.spacing(2),
@@ -126,19 +126,24 @@ function App() {
   }, [isRaceStarted]);
 
   useEffect(() => {
-    if (!isRaceStarted) return;
+    const processHorses = async () => {
+      if (!isRaceStarted) return;
 
-    // Try to submit answers for all horses that aren't processing and haven't finished
-    gameState.horses.forEach((horse) => {
-      if (!horse.isProcessing && horse.position <= 9) {
-        const currentQuestion = gameState.questions.find(
-          (q) => q.column === horse.position
-        );
-        if (currentQuestion) {
-          submitAnswer(horse.id, currentQuestion.id);
+      const promises = gameState.horses.map(async (horse) => {
+        if (!horse.isProcessing && horse.position <= 9) {
+          const currentQuestion = gameState.questions.find(
+            (q) => q.column === horse.position
+          );
+          if (currentQuestion) {
+            await submitAnswer(horse.id, currentQuestion.id);
+          }
         }
-      }
-    });
+      });
+
+      await Promise.all(promises);
+    };
+
+    processHorses();
   }, [isRaceStarted, gameState.horses]);
 
   const submitAnswer = async (horseId: number, questionId: string) => {
