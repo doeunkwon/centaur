@@ -36,8 +36,8 @@ func (h *AnswerHandler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received answer submission: horseId=%d, questionId=%s, model=%s",
-		req.HorseID, req.QuestionID, req.ModelValue)
+	log.Printf("Received answer submission: horseId=%d, question=%s, model=%s",
+		req.HorseID, req.Question, req.ModelValue)
 
 	response := h.answerService.ProcessAnswer(req)
 

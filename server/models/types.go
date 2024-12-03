@@ -2,7 +2,7 @@ package models
 
 type SubmitAnswerRequest struct {
 	HorseID    int    `json:"horseId"`
-	QuestionID string `json:"questionId"`
+	Question   string `json:"question"`
 	ModelValue string `json:"modelValue"`
 }
 

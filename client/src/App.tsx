@@ -68,8 +68,8 @@ function App() {
       },
       {
         id: 4,
-        emoji: "🏇",
-        color: "#FFB6C1",
+        emoji: "🐴",
+        color: "#EF9C66",
         position: 0,
         name: "",
         modelValue: "",
@@ -111,7 +111,7 @@ function App() {
             (q) => q.column === horse.position
           );
           if (currentQuestion) {
-            await submitAnswer(horse.id, currentQuestion.id);
+            await submitAnswer(horse.id, currentQuestion);
           }
         }
       });
@@ -122,7 +122,7 @@ function App() {
     processHorses();
   }, [isRaceStarted, gameState.horses]);
 
-  const submitAnswer = async (horseId: number, questionId: string) => {
+  const submitAnswer = async (horseId: number, question: Question) => {
     const horse = gameState.horses.find((h) => h.id === horseId);
 
     if (!horse?.modelValue || horse.isProcessing) {
@@ -146,7 +146,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           horseId,
-          questionId,
+          question: question.text,
           modelValue: horse.modelValue,
         }),
       });
@@ -168,7 +168,7 @@ function App() {
 
         const newAnswer: Answer = {
           id: Date.now().toString(),
-          questionId,
+          questionId: question.id,
           horseId,
           content: result.answer,
           status: result.approved ? "approved" : "rejected",
