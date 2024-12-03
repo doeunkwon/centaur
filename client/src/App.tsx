@@ -15,7 +15,7 @@ import {
   createTheme,
   CssBaseline,
 } from "@mui/material";
-import { GameState, MODEL_OPTIONS } from "./types";
+import { Answer, GameState, Horse, MODEL_OPTIONS, Question } from "./types";
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -70,24 +70,40 @@ const HorseName = styled(Box)({
   whiteSpace: "nowrap",
 });
 
+// Add this styled component after the other styled components
+const QAContainer = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(2),
+  marginTop: theme.spacing(3),
+  width: "100%",
+  maxWidth: 1200,
+}));
+
 function App() {
   const [gameState, setGameState] = useState<GameState>({
-    questions: [],
-    answers: [],
+    questions: [
+      { id: "1", text: "Explain quantum computing in simple terms", column: 0 },
+      { id: "2", text: "What is the meaning of life?", column: 1 },
+      { id: "3", text: "How does photosynthesis work?", column: 2 },
+      { id: "4", text: "Explain blockchain technology", column: 3 },
+      { id: "5", text: "What causes northern lights?", column: 4 },
+      { id: "6", text: "How do black holes work?", column: 5 },
+      { id: "7", text: "Explain how vaccines work", column: 6 },
+      { id: "8", text: "What is dark matter?", column: 7 },
+      { id: "9", text: "How does AI learning work?", column: 8 },
+      { id: "10", text: "Explain string theory", column: 9 },
+    ] as Question[],
+    answers: [] as Answer[],
     horses: [
       { id: 1, emoji: "🐎", position: 0, name: "", modelValue: "" },
       { id: 2, emoji: "🦄", position: 0, name: "", modelValue: "" },
       { id: 3, emoji: "🎠", position: 0, name: "", modelValue: "" },
       { id: 4, emoji: "🏇", position: 0, name: "", modelValue: "" },
-    ],
+    ] as Horse[],
     currentColumn: 0,
   });
 
   useEffect(() => {
-    // Initial fetch
-    fetchGameState();
-
-    // Setup WebSocket with proper URL construction
+    // Setup WebSocket only for broadcasting state changes to other clients
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsHost =
       process.env.NODE_ENV === "development"
@@ -95,22 +111,9 @@ function App() {
         : window.location.host;
     const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws`);
 
-    ws.onopen = () => {
-      console.log("WebSocket connected");
-    };
-
-    ws.onmessage = (event) => {
-      const newState = JSON.parse(event.data);
-      setGameState(newState);
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    ws.onclose = () => {
-      console.log("WebSocket disconnected");
-    };
+    ws.onopen = () => console.log("WebSocket connected");
+    ws.onerror = (error) => console.error("WebSocket error:", error);
+    ws.onclose = () => console.log("WebSocket disconnected");
 
     return () => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -119,19 +122,17 @@ function App() {
     };
   }, []);
 
-  const fetchGameState = async () => {
-    try {
-      const response = await fetch("/api/game-state");
-      const state = await response.json();
-      setGameState(state);
-    } catch (error) {
-      console.error("Failed to fetch game state:", error);
-    }
-  };
-
   const submitAnswer = async (horseId: number, questionId: string) => {
     const horse = gameState.horses.find((h) => h.id === horseId);
-    if (!horse?.modelValue || horse.isProcessing) return;
+    console.log("Attempting to submit answer:", { horseId, questionId, horse });
+
+    if (!horse?.modelValue || horse.isProcessing) {
+      console.log("Submission blocked:", {
+        noModelValue: !horse?.modelValue,
+        isProcessing: horse?.isProcessing,
+      });
+      return;
+    }
 
     try {
       setGameState((prev) => ({
@@ -141,6 +142,7 @@ function App() {
         ),
       }));
 
+      console.log("Sending request to server...");
       const response = await fetch("/api/submit-answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -153,9 +155,39 @@ function App() {
 
       if (!response.ok) throw new Error("Failed to submit answer");
 
-      // Backend will handle the websocket update
+      const result = await response.json();
+      console.log("Received response:", result);
+
+      setGameState((prev) => {
+        console.log("Updating state with new answer");
+        const newHorses = prev.horses.map((h) => {
+          if (h.id === horseId) {
+            const newPosition = result.approved
+              ? Math.min(h.position + 1, 9)
+              : Math.max(h.position - 1, 0);
+            return { ...h, position: newPosition, isProcessing: false };
+          }
+          return h;
+        });
+
+        const newAnswer: Answer = {
+          id: Date.now().toString(),
+          questionId,
+          horseId,
+          content: result.answer,
+          status: result.approved ? "approved" : "rejected",
+          timestamp: new Date().toISOString(),
+        };
+
+        console.log("New answer being added:", newAnswer);
+        return {
+          ...prev,
+          horses: newHorses,
+          answers: [...prev.answers, newAnswer],
+        };
+      });
     } catch (error) {
-      console.error("Failed to submit answer:", error);
+      console.error("Error submitting answer:", error);
       setGameState((prev) => ({
         ...prev,
         horses: prev.horses.map((h) =>
@@ -166,6 +198,7 @@ function App() {
   };
 
   const handleNameChange = async (horseId: number, newValue: string) => {
+    // Check if model is already selected by another horse
     if (
       gameState.horses.some(
         (horse) => horse.id !== horseId && horse.modelValue === newValue
@@ -179,39 +212,19 @@ function App() {
     );
 
     if (selectedModel) {
-      try {
-        // Update local state immediately for responsiveness
-        setGameState((prev) => ({
-          ...prev,
-          horses: prev.horses.map((h) =>
-            h.id === horseId
-              ? {
-                  ...h,
-                  name: selectedModel.name,
-                  modelValue: selectedModel.value,
-                }
-              : h
-          ),
-        }));
-
-        // Send update to backend
-        const response = await fetch("/api/update-horse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            horseId,
-            name: selectedModel.name,
-            modelValue: selectedModel.value,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to update horse model");
-        }
-      } catch (error) {
-        console.error("Failed to update horse model:", error);
-        // Optionally revert the state if the update failed
-      }
+      // Update local state only
+      setGameState((prev) => ({
+        ...prev,
+        horses: prev.horses.map((h) =>
+          h.id === horseId
+            ? {
+                ...h,
+                name: selectedModel.name,
+                modelValue: selectedModel.value,
+              }
+            : h
+        ),
+      }));
     }
   };
 
@@ -304,6 +317,42 @@ function App() {
               </Stack>
             ))}
           </Stack>
+
+          {/* New Questions & Answers section */}
+          <QAContainer elevation={3}>
+            <Stack spacing={2}>
+              {gameState.questions.map((question, index) => {
+                const answers = gameState.answers.filter(
+                  (a) => a.questionId === question.id
+                );
+                return (
+                  <Box key={question.id}>
+                    <Box sx={{ fontWeight: "bold", mb: 1 }}>
+                      Question {index + 1}: {question.text}
+                    </Box>
+                    {answers.length > 0 ? (
+                      answers.map((answer) => (
+                        <Box
+                          key={answer.id}
+                          sx={{ pl: 2, color: "text.secondary" }}
+                        >
+                          Answer from{" "}
+                          {gameState.horses.find(
+                            (horse) => horse.id === answer.horseId
+                          )?.name || "Unknown Horse"}
+                          : {answer.content}
+                        </Box>
+                      ))
+                    ) : (
+                      <Box sx={{ pl: 2, color: "text.secondary" }}>
+                        No answers yet.
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })}
+            </Stack>
+          </QAContainer>
         </Stack>
       </Container>
     </ThemeProvider>

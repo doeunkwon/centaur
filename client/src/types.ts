@@ -9,7 +9,7 @@ export interface Answer {
   questionId: string;
   horseId: number;
   content: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "approved" | "rejected" | "pending";
   timestamp: string;
 }
 
