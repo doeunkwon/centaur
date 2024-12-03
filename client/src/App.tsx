@@ -133,10 +133,11 @@ function App() {
   const submitAnswer = async (horseId: number, question: Question) => {
     const horse = gameState.horses.find((h) => h.id === horseId);
 
-    if (!horse?.modelValue || horse.isProcessing) {
+    if (!horse?.modelValue || horse.isProcessing || horse.isWaiting) {
       console.log("Submission blocked:", {
         noModelValue: !horse?.modelValue,
         isProcessing: horse?.isProcessing,
+        isWaiting: horse?.isWaiting,
       });
       return;
     }
@@ -183,15 +184,15 @@ function App() {
       setGameState((prev) => {
         const newHorses = prev.horses.map((h) => {
           if (h.id === horseId) {
-            console.log("Approval for horse", horse.name, result.approved);
             if (result.approved) {
               return {
                 ...h,
                 position: Math.min(h.position + 1, 10),
                 isProcessing: false,
+                isWaiting: false,
               };
             } else {
-              // For incorrect answers, set a timeout to move forward after 10 seconds
+              // Set isWaiting to true and start a timeout
               setTimeout(() => {
                 setGameState((prevState) => ({
                   ...prevState,
@@ -201,13 +202,13 @@ function App() {
                           ...horse,
                           position: Math.min(horse.position + 1, 10),
                           isProcessing: false,
+                          isWaiting: false,
                         }
                       : horse
                   ),
                 }));
               }, 10000);
-              // Initially just set isProcessing to true to prevent new attempts
-              return { ...h, isProcessing: true };
+              return { ...h, isProcessing: true, isWaiting: true };
             }
           }
           return h;

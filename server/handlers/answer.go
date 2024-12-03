@@ -33,7 +33,6 @@ func (h *AnswerHandler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 
 	// Log the raw request body
 	body, _ := io.ReadAll(r.Body)
-	log.Printf("Raw request body: %s", string(body))
 	r.Body = io.NopCloser(bytes.NewBuffer(body)) // Restore the body
 
 	var req models.SubmitAnswerRequest
@@ -43,11 +42,6 @@ func (h *AnswerHandler) SubmitAnswer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	log.Printf("Decoded request: %+v", req)
-
-	log.Printf("Received answer submission: horseId=%d, question=%s, model=%s",
-		req.HorseID, req.Question, req.ModelValue)
 
 	response := h.answerService.ProcessAnswer(req)
 

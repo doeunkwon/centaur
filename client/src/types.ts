@@ -23,6 +23,7 @@ export interface Horse {
   color: string;
   modelValue: string;
   isProcessing?: boolean;
+  isWaiting?: boolean;
 }
 
 export interface GameState {

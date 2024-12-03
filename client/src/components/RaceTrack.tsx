@@ -14,7 +14,7 @@ const RaceTrackContainer = styled(Paper)(({ theme }) => ({
   alignItems: "center",
 }));
 
-const HorseCell = styled(Box)({
+const HorseCell = styled(Box)<{ $selected?: boolean }>(({ theme }) => ({
   width: "80%",
   height: "80%",
   borderRadius: "50%",
@@ -22,12 +22,29 @@ const HorseCell = styled(Box)({
   alignItems: "center",
   justifyContent: "center",
   transition: "all 0.3s ease",
-});
+  position: "relative",
+}));
 
 const HorseContent = styled(Box)({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+});
+
+const SleepOverlay = styled(Box)({
+  position: "absolute",
+  top: -5,
+  right: -5,
+  width: 23,
+  height: 23,
+  backgroundColor: "#ffffff",
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  border: "2px solid #e0e0e0",
+  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+  fontSize: 12,
 });
 
 // const HorseName = styled(Box)({
@@ -57,6 +74,7 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ horses }) => (
       >
         <HorseContent>
           <Box sx={{ fontSize: "2em" }}>{horse.emoji}</Box>
+          {horse.isWaiting && <SleepOverlay>❌</SleepOverlay>}
           {/* <HorseName>{horse.name || "Unnamed"}</HorseName> */}
         </HorseContent>
       </HorseCell>

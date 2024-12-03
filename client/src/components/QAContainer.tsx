@@ -38,6 +38,7 @@ const QAContainer: React.FC<QAContainerProps> = ({
                         ?.color,
                     }}
                   >
+                    {answer.status === "approved" ? "✅ " : "❌ "}
                     {horses.find((horse) => horse.id === answer.horseId)
                       ?.name || "Unknown Horse"}
                     : {answer.content}
