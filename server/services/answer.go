@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 )
 
 type AnswerService struct{}
@@ -28,23 +31,46 @@ func (s *AnswerService) ProcessAnswer(req models.SubmitAnswerRequest) models.Sub
 	}
 }
 
-func (s *AnswerService) generateAnswer(model string, question string) string {
+func (s *AnswerService) generateAnswer(model string, question models.Question) string {
 	apiKey := os.Getenv("CLOD_API_KEY")
 	if apiKey == "" {
-		log.Println("Error: CLOD_API_KEY environment variable not set")
-		return "Error: API key not configured"
+		return question.Choices[rand.Intn(len(question.Choices))]
 	}
 
 	url := "https://api.clod.io/v1/chat/completions"
+
+	systemPrompt := `You are a choice selector. Your ONLY job is to select ONE answer from the provided choices.
+CRITICAL RULES:
+1. You MUST select EXACTLY ONE of the provided choices
+2. Your response must be a JSON object with a "selected_choice" field
+3. The "selected_choice" value MUST be an exact match to one of the provided choices
+4. Do not explain your choice or add any other text
+5. If unsure, make your best guess - you MUST choose one
+
+Example input:
+Question: What is the capital of France?
+Choices: London, Paris, Berlin
+
+Example response:
+{"selected_choice": "Paris"}
+
+REMEMBER: Always respond with valid JSON containing exactly one of the provided choices.`
 
 	// Prepare the request payload
 	payload := map[string]interface{}{
 		"model": model,
 		"messages": []map[string]string{
-			{"role": "system", "content": "Please provide concise answers in about 300 characters."},
-			{"role": "user", "content": question},
+			{"role": "system", "content": systemPrompt},
+			{"role": "user", "content": fmt.Sprintf("Question: %s\nChoices: %s",
+				question.Content,
+				strings.Join(question.Choices, ", "))},
 		},
-		"max_tokens": 80,
+		"response_format": map[string]string{
+			"type": "json_object",
+		},
+		"temperature":  0,
+		"max_tokens":   80,
+		"total_tokens": 500,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -92,112 +118,43 @@ func (s *AnswerService) generateAnswer(model string, question string) string {
 		if choice, ok := choices[0].(map[string]interface{}); ok {
 			if message, ok := choice["message"].(map[string]interface{}); ok {
 				if content, ok := message["content"].(string); ok {
-					return content
+					log.Printf("Raw content from LLM: %s\n", content)
+
+					// Clean the content
+					cleanContent := strings.Trim(content, "`\n\r\t ")
+
+					// Try parsing as JSON first
+					var selectedAnswer struct {
+						SelectedChoice string `json:"selected_choice"`
+					}
+					if err := json.Unmarshal([]byte(cleanContent), &selectedAnswer); err == nil {
+						for _, c := range question.Choices {
+							if c == selectedAnswer.SelectedChoice {
+								return c
+							}
+						}
+					}
+
+					// If JSON parsing fails, try direct matching
+					for _, c := range question.Choices {
+						if strings.EqualFold(cleanContent, c) {
+							return c
+						}
+					}
+
+					log.Printf("LLM response didn't match any choices, selecting random choice\n")
 				}
 			}
 		}
 	}
 
-	return "Error generating answer"
+	// If we get here, something went wrong - return a random choice as fallback
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return question.Choices[r.Intn(len(question.Choices))]
 }
 
-func (s *AnswerService) evaluateAnswer(question, answer string) bool {
-	apiKey := os.Getenv("CLOD_API_KEY")
-	if apiKey == "" {
-		log.Println("Error: CLOD_API_KEY environment variable not set")
-		return false
-	}
-
-	url := "https://api.clod.io/v1/chat/completions"
-
-	// Prepare the evaluation prompt
-	evaluationPrompt := fmt.Sprintf(
-		"You are an answer evaluator. Evaluate if the following answer is appropriate for the question. "+
-			"Respond with a JSON object containing a single boolean field 'isValid'. Set it to true if the answer is good, "+
-			"or false if it's inappropriate, irrelevant, or contains errors.\n\n"+
-			"Question: %s\nAnswer: %s\n\n"+
-			"Respond only with valid JSON in this format: {\"isValid\": true} or {\"isValid\": false}",
-		question, answer,
-	)
-
-	// Prepare the request payload
-	payload := map[string]interface{}{
-		"model": "gpt-4o",
-		"messages": []map[string]string{
-			{"role": "system", "content": "You must respond with valid JSON only."},
-			{"role": "user", "content": evaluationPrompt},
-		},
-		"max_tokens": 20,
-		"response_format": map[string]string{
-			"type": "json_object",
-		},
-	}
-
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Println("Error marshalling evaluation payload:", err)
-		return false
-	}
-
-	// Create a new HTTP request
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
-	if err != nil {
-		log.Println("Error creating evaluation request:", err)
-		return false
-	}
-
-	// Set headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-
-	// Make the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Printf("Error making evaluation request to %s: %v\n", req.URL, err)
-		return false
-	}
-	defer resp.Body.Close()
-
-	// Read the response
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println("Error reading evaluation response:", err)
-		return false
-	}
-
-	// Parse the response
-	var response map[string]interface{}
-	if err := json.Unmarshal(body, &response); err != nil {
-		log.Println("Error unmarshalling API response:", err)
-		return false
-	}
-
-	// Check if the response is empty
-	if len(response) == 0 {
-		log.Println("Error: Empty response from API")
-		return false
-	}
-
-	// Extract and parse the evaluation result
-	if choices, ok := response["choices"].([]interface{}); ok && len(choices) > 0 {
-		if choice, ok := choices[0].(map[string]interface{}); ok {
-			if message, ok := choice["message"].(map[string]interface{}); ok {
-				if content, ok := message["content"].(string); ok {
-					var result struct {
-						IsValid bool `json:"isValid"`
-					}
-					if err := json.Unmarshal([]byte(content), &result); err != nil {
-						log.Println("Error parsing evaluation result:", err)
-						return false
-					}
-					return result.IsValid
-				}
-			}
-		}
-	}
-
-	return false
+func (s *AnswerService) evaluateAnswer(question models.Question, answer string) bool {
+	return answer == question.Answer
 }
 
 // Use these for testing

@@ -149,12 +149,29 @@ function App() {
         ),
       }));
 
+      const payload = {
+        horseId: horseId,
+        question: {
+          id: question.id,
+          content: question.content,
+          answer: question.answer,
+          choices: question.choices,
+        },
+        modelValue: horse.modelValue,
+      };
+      console.log("Sending payload:", payload);
+
       const response = await fetch("/api/submit-answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          horseId,
-          question: question.content,
+          horseId: horseId,
+          question: {
+            id: question.id,
+            content: question.content,
+            answer: question.answer,
+            choices: question.choices,
+          },
           modelValue: horse.modelValue,
         }),
       });
@@ -167,10 +184,31 @@ function App() {
         const newHorses = prev.horses.map((h) => {
           if (h.id === horseId) {
             console.log("Approval for horse", horse.name, result.approved);
-            const newPosition = result.approved
-              ? Math.min(h.position + 1, 10)
-              : Math.max(h.position - 1, 0);
-            return { ...h, position: newPosition, isProcessing: false };
+            if (result.approved) {
+              return {
+                ...h,
+                position: Math.min(h.position + 1, 10),
+                isProcessing: false,
+              };
+            } else {
+              // For incorrect answers, set a timeout to move forward after 10 seconds
+              setTimeout(() => {
+                setGameState((prevState) => ({
+                  ...prevState,
+                  horses: prevState.horses.map((horse) =>
+                    horse.id === horseId
+                      ? {
+                          ...horse,
+                          position: Math.min(horse.position + 1, 10),
+                          isProcessing: false,
+                        }
+                      : horse
+                  ),
+                }));
+              }, 10000);
+              // Initially just set isProcessing to true to prevent new attempts
+              return { ...h, isProcessing: true };
+            }
           }
           return h;
         });

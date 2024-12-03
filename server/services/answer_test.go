@@ -1,118 +1,174 @@
 package services
 
 import (
-	"os"
+	"centaur/models"
 	"testing"
 
 	"github.com/joho/godotenv"
 )
 
-func TestMain(m *testing.M) {
-	// Load environment variables from .env file
+func init() {
+	// Load the .env file
 	if err := godotenv.Load("../.env"); err != nil {
-		// Try loading from parent directory if current directory fails
-		if err := godotenv.Load("../../.env"); err != nil {
-			// Log but don't fail - env vars might be set directly
-			// in the environment (e.g., in CI/CD)
-		}
+		panic("Error loading .env file")
 	}
-	os.Exit(m.Run())
 }
 
-func TestAnswerService_GenerateAnswer(t *testing.T) {
+func TestGenerateAnswer(t *testing.T) {
 	service := NewAnswerService()
 
-	tests := []struct {
-		name      string
-		model     string
-		question  string
-		wantError bool
+	testCases := []struct {
+		name           string
+		question       models.Question
+		expectedChoice string
 	}{
 		{
-			name:      "valid model and question",
-			model:     "clod-3",
-			question:  "What is the capital of France?",
-			wantError: false,
+			name: "Simple Math",
+			question: models.Question{
+				Content: "What is 2+2? Please select the mathematically correct answer.",
+				Choices: []string{"4", "5", "10", "15"},
+			},
+			expectedChoice: "4",
+		},
+		{
+			name: "Basic Color",
+			question: models.Question{
+				Content: "What color is a ripe banana?",
+				Choices: []string{"Green", "Yellow", "Red", "Blue"},
+			},
+			expectedChoice: "Yellow",
+		},
+		{
+			name: "Capital City",
+			question: models.Question{
+				Content: "What is the capital of France?",
+				Choices: []string{"London", "Berlin", "Paris", "Madrid"},
+			},
+			expectedChoice: "Paris",
+		},
+		{
+			name: "Scientific Fact",
+			question: models.Question{
+				Content: "What is the closest planet to the Sun?",
+				Choices: []string{"Venus", "Earth", "Mercury", "Mars"},
+			},
+			expectedChoice: "Mercury",
+		},
+		{
+			name: "Multiple Choice with Long Options",
+			question: models.Question{
+				Content: "Which of these is a mammal?",
+				Choices: []string{
+					"A snake that gives live birth",
+					"A whale that breathes air and produces milk",
+					"A salamander that lives on land",
+					"A penguin that feeds its babies",
+				},
+			},
+			expectedChoice: "A whale that breathes air and produces milk",
+		},
+		{
+			name: "Basic Grammar",
+			question: models.Question{
+				Content: "Which is the correct spelling?",
+				Choices: []string{"recieve", "receive", "receeve", "receve"},
+			},
+			expectedChoice: "receive",
+		},
+		{
+			name: "Numeric Range",
+			question: models.Question{
+				Content: "What is 10% of 100?",
+				Choices: []string{"1", "5", "10", "20"},
+			},
+			expectedChoice: "10",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			answer := service.generateAnswer(tt.model, tt.question)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := service.generateAnswer("gemma-2-9b", tc.question)
 
-			if tt.wantError {
-				if !isErrorResponse(answer) {
-					t.Errorf("expected error response, got: %s", answer)
+			// Verify result is one of the choices
+			isValidChoice := false
+			for _, choice := range tc.question.Choices {
+				if result == choice {
+					isValidChoice = true
+					break
 				}
-			} else {
-				if isErrorResponse(answer) {
-					t.Errorf("expected valid answer, got error: %s", answer)
-				}
-				if len(answer) == 0 {
-					t.Error("expected non-empty answer")
-				}
+			}
+
+			if !isValidChoice {
+				t.Errorf("Generated answer '%s' is not one of the provided choices: %v",
+					result, tc.question.Choices)
+			}
+
+			// Verify the expected answer
+			if result != tc.expectedChoice {
+				t.Errorf("Expected '%s', got '%s'", tc.expectedChoice, result)
 			}
 		})
 	}
 }
 
-func TestAnswerService_EvaluateAnswer(t *testing.T) {
+func TestEvaluateAnswer(t *testing.T) {
 	service := NewAnswerService()
 
-	tests := []struct {
-		name     string
-		question string
-		answer   string
-		want     bool
+	testCases := []struct {
+		name          string
+		question      models.Question
+		userAnswer    string
+		expectedScore bool
 	}{
 		{
-			name:     "valid answer",
-			question: "What is 2+2?",
-			answer:   "4",
-			want:     true,
+			name: "Correct Answer",
+			question: models.Question{
+				Content: "What is 2+2?",
+				Choices: []string{"4", "5", "6", "7"},
+				Answer:  "4",
+			},
+			userAnswer:    "4",
+			expectedScore: true,
 		},
 		{
-			name:     "invalid answer",
-			question: "What is 2+2?",
-			answer:   "The sky is blue",
-			want:     false,
+			name: "Wrong Answer",
+			question: models.Question{
+				Content: "What is the capital of France?",
+				Choices: []string{"London", "Paris", "Berlin", "Madrid"},
+				Answer:  "Paris",
+			},
+			userAnswer:    "London",
+			expectedScore: false,
 		},
 		{
-			name:     "empty answer",
-			question: "What is 2+2?",
-			answer:   "",
-			want:     false,
+			name: "Invalid Answer",
+			question: models.Question{
+				Content: "What is the capital of France?",
+				Choices: []string{"London", "Paris", "Berlin", "Madrid"},
+				Answer:  "Paris",
+			},
+			userAnswer:    "Tokyo",
+			expectedScore: false,
 		},
 		{
-			name:     "error message answer",
-			question: "What is 2+2?",
-			answer:   "Error generating answer",
-			want:     false,
+			name: "Empty Answer",
+			question: models.Question{
+				Content: "What is the capital of France?",
+				Choices: []string{"London", "Paris", "Berlin", "Madrid"},
+				Answer:  "Paris",
+			},
+			userAnswer:    "",
+			expectedScore: false,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := service.evaluateAnswer(tt.question, tt.answer)
-			if got != tt.want {
-				t.Errorf("evaluateAnswer() = %v, want %v", got, tt.want)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			score := service.evaluateAnswer(tc.question, tc.userAnswer)
+
+			if score != tc.expectedScore {
+				t.Errorf("Expected score %t, got %t", tc.expectedScore, score)
 			}
 		})
 	}
-}
-
-// Helper function to check if the response is an error message
-func isErrorResponse(answer string) bool {
-	errorResponses := []string{
-		"Error generating answer",
-		"Error: API key not configured",
-		"Error:",
-	}
-
-	for _, errMsg := range errorResponses {
-		if answer == errMsg {
-			return true
-		}
-	}
-	return false
 }
