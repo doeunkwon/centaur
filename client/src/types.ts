@@ -1,7 +1,9 @@
 export interface Question {
   id: string;
-  text: string;
+  content: string;
   column: number;
+  choices: string[];
+  answer: string;
 }
 
 export interface Answer {
@@ -57,4 +59,6 @@ export const MODEL_OPTIONS: ModelOption[] = [
   { name: "Open Mixtral 8x7B", value: "open-mixtral-8x7b" },
   { name: "Open Mixtral 8x22B", value: "open-mixtral-8x22b" },
   { name: "Open Mistral 7B", value: "open-mistral-7b" },
-]; 
+];
+
+export type QuestionBankEntry = Omit<Question, 'column'>; 

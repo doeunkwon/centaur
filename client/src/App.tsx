@@ -11,6 +11,7 @@ import { Answer, GameState, Horse, MODEL_OPTIONS, Question } from "./types";
 import RaceTrack from "./components/RaceTrack";
 import HorseSelector from "./components/HorseSelector";
 import QAContainer from "./components/QAContainer";
+import { questionBank } from "./data/questionBank";
 
 // Create dark theme
 const darkTheme = createTheme({
@@ -26,56 +27,63 @@ const darkTheme = createTheme({
   },
 });
 
+function shuffleArray<T>(array: T[]): T[] {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
+
 function App() {
-  const [gameState, setGameState] = useState<GameState>({
-    questions: [
-      { id: "1", text: "Explain quantum computing in simple terms", column: 0 },
-      { id: "2", text: "What is the meaning of life?", column: 1 },
-      { id: "3", text: "How does photosynthesis work?", column: 2 },
-      { id: "4", text: "Explain blockchain technology", column: 3 },
-      { id: "5", text: "What causes northern lights?", column: 4 },
-      { id: "6", text: "How do black holes work?", column: 5 },
-      { id: "7", text: "Explain how vaccines work", column: 6 },
-      { id: "8", text: "What is dark matter?", column: 7 },
-      { id: "9", text: "How does AI learning work?", column: 8 },
-      { id: "10", text: "Explain string theory", column: 9 },
-    ] as Question[],
-    answers: [] as Answer[],
-    horses: [
-      {
-        id: 1,
-        emoji: "🦄",
-        color: "#DDA0DD",
-        position: 0,
-        name: "",
-        modelValue: "",
-      },
-      {
-        id: 2,
-        emoji: "🐎",
-        color: "#98FB98",
-        position: 0,
-        name: "",
-        modelValue: "",
-      },
-      {
-        id: 3,
-        emoji: "🎠",
-        color: "#87CEEB",
-        position: 0,
-        name: "",
-        modelValue: "",
-      },
-      {
-        id: 4,
-        emoji: "🐴",
-        color: "#EF9C66",
-        position: 0,
-        name: "",
-        modelValue: "",
-      },
-    ] as Horse[],
-    currentColumn: 0,
+  const [gameState, setGameState] = useState<GameState>(() => {
+    const selectedQuestions = shuffleArray(questionBank)
+      .slice(0, 10)
+      .map((q, index) => ({
+        ...q,
+        column: index,
+      }));
+
+    return {
+      questions: selectedQuestions,
+      answers: [] as Answer[],
+      horses: [
+        {
+          id: 1,
+          emoji: "🦄",
+          color: "#DDA0DD",
+          position: 0,
+          name: "",
+          modelValue: "",
+        },
+        {
+          id: 2,
+          emoji: "🐎",
+          color: "#98FB98",
+          position: 0,
+          name: "",
+          modelValue: "",
+        },
+        {
+          id: 3,
+          emoji: "🎠",
+          color: "#87CEEB",
+          position: 0,
+          name: "",
+          modelValue: "",
+        },
+        {
+          id: 4,
+          emoji: "🐴",
+          color: "#EF9C66",
+          position: 0,
+          name: "",
+          modelValue: "",
+        },
+      ] as Horse[],
+      currentColumn: 0,
+    };
   });
 
   const [isRaceStarted, setIsRaceStarted] = useState(false);
@@ -146,7 +154,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           horseId,
-          question: question.text,
+          question: question.content,
           modelValue: horse.modelValue,
         }),
       });
@@ -158,6 +166,7 @@ function App() {
       setGameState((prev) => {
         const newHorses = prev.horses.map((h) => {
           if (h.id === horseId) {
+            console.log("Approval for horse", horse.name, result.approved);
             const newPosition = result.approved
               ? Math.min(h.position + 1, 10)
               : Math.max(h.position - 1, 0);
@@ -167,7 +176,7 @@ function App() {
         });
 
         const newAnswer: Answer = {
-          id: `${question.id}-${horseId}`,
+          id: `${question.id}-${horseId}-${Date.now()}`,
           questionId: question.id,
           horseId,
           content: result.answer,
