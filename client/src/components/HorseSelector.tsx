@@ -25,16 +25,45 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
     justifyContent="center"
     sx={{ maxWidth: 1200, gap: 2 }}
   >
-    {horses.map((horse) => (
+    {horses.map((horse, index) => (
       <Stack key={horse.id} spacing={2} alignItems="center">
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel id={`horse-${horse.id}-label`}>Select Model</InputLabel>
+        <FormControl
+          sx={{
+            minWidth: 200,
+            "& .MuiOutlinedInput-root": {
+              borderColor: horse.color,
+              "&:hover fieldset": {
+                borderColor: horse.color,
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: horse.color,
+              },
+            },
+            "& .MuiInputLabel-root.Mui-focused": {
+              color: horse.color,
+            },
+          }}
+        >
+          <InputLabel
+            id={`horse-${horse.id}-label`}
+            sx={{
+              color: horse.color,
+            }}
+          >
+            Pick model for {horse.emoji}
+          </InputLabel>
           <Select
             labelId={`horse-${horse.id}-label`}
             value={horse.modelValue}
-            label="Select Model"
+            label={`Pick model for ${horse.emoji}`}
             onChange={(e) => onNameChange(horse.id, e.target.value)}
             disabled={isRaceStarted}
+            sx={{
+              backgroundColor: `${horse.color}22`, // Adding transparency
+              "&:hover": {
+                backgroundColor: `${horse.color}33`,
+              },
+            }}
           >
             {MODEL_OPTIONS.map((model) => (
               <MenuItem

@@ -14,31 +14,29 @@ const RaceTrackContainer = styled(Paper)(({ theme }) => ({
   alignItems: "center",
 }));
 
-const HorseCell = styled(Box)(({ theme }) => ({
+const HorseCell = styled(Box)({
   width: "80%",
   height: "80%",
-  backgroundColor: theme.palette.background.default,
   borderRadius: "50%",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   transition: "all 0.3s ease",
-}));
+});
 
 const HorseContent = styled(Box)({
   display: "flex",
-  flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
 });
 
-const HorseName = styled(Box)({
-  fontSize: "0.6em",
-  maxWidth: 60,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-});
+// const HorseName = styled(Box)({
+//   fontSize: "0.6em",
+//   maxWidth: 60,
+//   overflow: "hidden",
+//   textOverflow: "ellipsis",
+//   whiteSpace: "nowrap",
+// });
 
 interface RaceTrackProps {
   horses: Horse[];
@@ -53,11 +51,13 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ horses }) => (
           gridRow: horse.id,
           gridColumn: horse.position + 1,
           opacity: horse.isProcessing ? 0.5 : 1,
+          backgroundColor: `${horse.color}50`,
+          border: `2px solid ${horse.color}`,
         }}
       >
         <HorseContent>
           <Box sx={{ fontSize: "2em" }}>{horse.emoji}</Box>
-          <HorseName>{horse.name || "Unnamed"}</HorseName>
+          {/* <HorseName>{horse.name || "Unnamed"}</HorseName> */}
         </HorseContent>
       </HorseCell>
     ))}

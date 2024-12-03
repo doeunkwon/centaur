@@ -4,8 +4,7 @@ import { Answer, Question, Horse } from "../types";
 const QAContainerStyled = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
   marginTop: theme.spacing(3),
-  width: "100%",
-  maxWidth: 1200,
+  maxWidth: "lg",
 }));
 
 interface QAContainerProps {

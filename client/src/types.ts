@@ -18,6 +18,7 @@ export interface Horse {
   emoji: string;
   position: number;
   name: string;
+  color: string;
   modelValue: string;
   isProcessing?: boolean;
 }
