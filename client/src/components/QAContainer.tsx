@@ -32,10 +32,16 @@ const QAContainer: React.FC<QAContainerProps> = ({
             {questionAnswers.length > 0 ? (
               questionAnswers.map((answer) => (
                 <Box key={answer.id} sx={{ pl: 2, color: "text.secondary" }}>
-                  Answer from{" "}
-                  {horses.find((horse) => horse.id === answer.horseId)?.name ||
-                    "Unknown Horse"}
-                  : {answer.content}
+                  <span
+                    style={{
+                      color: horses.find((horse) => horse.id === answer.horseId)
+                        ?.color,
+                    }}
+                  >
+                    {horses.find((horse) => horse.id === answer.horseId)
+                      ?.name || "Unknown Horse"}
+                    : {answer.content}
+                  </span>
                 </Box>
               ))
             ) : (

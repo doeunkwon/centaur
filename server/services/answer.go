@@ -43,8 +43,10 @@ func (s *AnswerService) generateAnswer(model string, question string) string {
 	payload := map[string]interface{}{
 		"model": model,
 		"messages": []map[string]string{
+			{"role": "system", "content": "Please provide concise answers in about 400 characters."},
 			{"role": "user", "content": question},
 		},
+		"max_tokens": 100,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
