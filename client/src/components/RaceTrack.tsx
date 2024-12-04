@@ -1,31 +1,37 @@
 import { Box, Paper, styled } from "@mui/material";
 import { Horse } from "../types";
+import { useMediaQuery, useTheme } from "@mui/material";
 
 const RaceTrackContainer = styled(Paper)(({ theme }) => ({
   display: "grid",
-  gridTemplateColumns: "repeat(11, 80px)",
-  gridTemplateRows: "repeat(4, 80px)",
+  gridTemplateColumns: "repeat(11, minmax(0, 1fr))",
+  gridTemplateRows: "repeat(4, 1fr)",
   gap: 4,
   padding: theme.spacing(2),
   backgroundColor: theme.palette.background.paper,
   marginBottom: theme.spacing(3),
-  border: `1px solid ${theme.palette.divider}`,
   justifyContent: "center",
   alignItems: "center",
+  width: "100%",
+  "& > *": {
+    aspectRatio: "1 / 1",
+  },
 }));
 
 const HorseCell = styled(Box)<{ $selected?: boolean }>(({ theme }) => ({
-  width: "80%",
-  height: "80%",
+  width: "70%",
   borderRadius: "50%",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   transition: "all 0.3s ease",
   position: "relative",
+  margin: "10px",
 }));
 
 const HorseContent = styled(Box)({
+  width: "80%",
+  height: "80%",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -33,10 +39,10 @@ const HorseContent = styled(Box)({
 
 const SleepOverlay = styled(Box)({
   position: "absolute",
-  top: -5,
-  right: -5,
-  width: 23,
-  height: 23,
+  top: "-10%",
+  right: "-10%",
+  width: "40%",
+  height: "40%",
   backgroundColor: "#ffffff",
   borderRadius: "50%",
   display: "flex",
@@ -44,7 +50,7 @@ const SleepOverlay = styled(Box)({
   justifyContent: "center",
   border: "2px solid #e0e0e0",
   boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-  fontSize: 12,
+  fontSize: "1em",
 });
 
 // const HorseName = styled(Box)({
@@ -60,6 +66,9 @@ interface RaceTrackProps {
 }
 
 const RaceTrack: React.FC<RaceTrackProps> = ({ horses }) => {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("md")); // lg is typically 1200px
+
   // Create a list of horses that have finished, sorted by finishTime
   const finishedHorses = horses
     .filter((horse) => horse.finishTime !== undefined)
@@ -92,9 +101,20 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ horses }) => {
             }}
           >
             <HorseContent>
-              <Box sx={{ fontSize: "2em" }}>{horse.emoji}</Box>
-              {horse.isWaiting && <SleepOverlay>❌</SleepOverlay>}
-              {overlayIcon && <SleepOverlay>{overlayIcon}</SleepOverlay>}
+              {isSmallScreen ? (
+                // Show only status or medal icon on small screens
+                <Box sx={{ fontSize: "1em" }}>
+                  {horse.isWaiting ? "💤" : null}
+                  {overlayIcon ? overlayIcon : null}
+                </Box>
+              ) : (
+                // Show horse emoji and overlay icons on larger screens
+                <>
+                  <Box sx={{ fontSize: "2em" }}>{horse.emoji}</Box>
+                  {horse.isWaiting && <SleepOverlay>💤</SleepOverlay>}
+                  {overlayIcon && <SleepOverlay>{overlayIcon}</SleepOverlay>}
+                </>
+              )}
             </HorseContent>
           </HorseCell>
         );

@@ -4,7 +4,8 @@ import { Answer, Question, Horse } from "../types";
 const QAContainerStyled = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
   marginTop: theme.spacing(3),
-  maxWidth: "lg",
+  width: "100%",
+  backgroundColor: theme.palette.background.paper,
 }));
 
 interface QAContainerProps {
@@ -27,7 +28,7 @@ const QAContainer: React.FC<QAContainerProps> = ({
         return (
           <Box key={question.id}>
             <Box sx={{ fontWeight: "bold", mb: 1 }}>
-              Question {index + 1}: {question.content}
+              Q{index + 1}: {question.content}
             </Box>
             {questionAnswers.length > 0 ? (
               questionAnswers.map((answer) => (

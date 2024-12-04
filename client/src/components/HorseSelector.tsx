@@ -20,10 +20,9 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
 }) => (
   <Stack
     direction="row"
-    spacing={2}
     flexWrap="wrap"
     justifyContent="center"
-    sx={{ maxWidth: 1200, gap: 2 }}
+    sx={{ width: "100%", gap: 3 }}
   >
     {horses.map((horse, index) => (
       <Stack key={horse.id} spacing={2} alignItems="center">

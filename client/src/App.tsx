@@ -18,11 +18,11 @@ const darkTheme = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#90caf9",
+      main: "#0079FF",
     },
     background: {
       default: "#1a1a1a",
-      paper: "#2d2d2d",
+      paper: "#1a1a1a",
     },
   },
 });
@@ -279,12 +279,12 @@ function App() {
       <CssBaseline />
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Stack spacing={3} alignItems="center">
-          <RaceTrack horses={gameState.horses} />
           <HorseSelector
             horses={gameState.horses}
             isRaceStarted={isRaceStarted}
             onNameChange={handleNameChange}
           />
+          <RaceTrack horses={gameState.horses} />
           {!isRaceStarted && (
             <Button
               variant="contained"
@@ -297,11 +297,13 @@ function App() {
               Start Race
             </Button>
           )}
-          <QAContainer
-            questions={gameState.questions}
-            answers={gameState.answers}
-            horses={gameState.horses}
-          />
+          {isRaceStarted && (
+            <QAContainer
+              questions={gameState.questions}
+              answers={gameState.answers}
+              horses={gameState.horses}
+            />
+          )}
         </Stack>
       </Container>
     </ThemeProvider>
