@@ -65,13 +65,7 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
             }}
           >
             {MODEL_OPTIONS.map((model) => (
-              <MenuItem
-                key={model.value}
-                value={model.value}
-                disabled={horses.some(
-                  (h) => h.id !== horse.id && h.modelValue === model.value
-                )}
-              >
+              <MenuItem key={model.value} value={model.value}>
                 {model.name}
               </MenuItem>
             ))}

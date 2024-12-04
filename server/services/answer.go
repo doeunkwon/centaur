@@ -68,9 +68,10 @@ REMEMBER: Always respond with valid JSON containing exactly one of the provided 
 		"response_format": map[string]string{
 			"type": "json_object",
 		},
-		"temperature":  0,
-		"max_tokens":   80,
-		"total_tokens": 500,
+		"max_tokens":  80,
+		"temperature": 0,
+		"top_p":       0,
+		"top_k":       1,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -112,6 +113,7 @@ REMEMBER: Always respond with valid JSON containing exactly one of the provided 
 		return "Error generating answer"
 	}
 
+	log.Printf("Response: %v", response)
 	// Extract the answer from the response
 	if choices, ok := response["choices"].([]interface{}); ok && len(choices) > 0 {
 		if choice, ok := choices[0].(map[string]interface{}); ok {

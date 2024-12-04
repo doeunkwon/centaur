@@ -265,14 +265,6 @@ function App() {
   };
 
   const handleNameChange = async (horseId: number, newValue: string) => {
-    if (
-      gameState.horses.some(
-        (horse) => horse.id !== horseId && horse.modelValue === newValue
-      )
-    ) {
-      return;
-    }
-
     const selectedModel = MODEL_OPTIONS.find(
       (model) => model.value === newValue
     );
