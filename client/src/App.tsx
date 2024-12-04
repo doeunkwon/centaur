@@ -114,7 +114,7 @@ function App() {
       if (!isRaceStarted) return;
 
       const promises = gameState.horses.map(async (horse) => {
-        if (!horse.isProcessing && horse.position <= 9) {
+        if (!horse.isProcessing && !horse.isWaiting && horse.position <= 9) {
           const currentQuestion = gameState.questions.find(
             (q) => q.column === horse.position
           );
@@ -209,7 +209,7 @@ function App() {
                   ),
                 }));
               }, 10000);
-              return { ...h, isProcessing: true, isWaiting: true };
+              return { ...h, isProcessing: false, isWaiting: true };
             }
           }
           return h;
@@ -292,7 +292,7 @@ function App() {
               size="large"
               onClick={() => setIsRaceStarted(true)}
               disabled={!canStartRace()}
-              sx={{ mt: 2 }}
+              sx={{ mt: 2, textTransform: "none" }}
             >
               Start Race
             </Button>
