@@ -18,11 +18,14 @@ const darkTheme = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#0079FF",
+      main: "rgba(54, 94, 50, 0.5)",
     },
     background: {
       default: "#1a1a1a",
-      paper: "#1a1a1a",
+      paper: "#101010",
+    },
+    text: {
+      primary: "#e2e2e2",
     },
   },
 });
@@ -133,11 +136,17 @@ function App() {
   const submitAnswer = async (horseId: number, question: Question) => {
     const horse = gameState.horses.find((h) => h.id === horseId);
 
-    if (!horse?.modelValue || horse.isProcessing || horse.isWaiting) {
+    if (
+      !horse?.modelValue ||
+      horse.isProcessing ||
+      horse.isWaiting ||
+      horse.position >= 10
+    ) {
       console.log("Submission blocked:", {
         noModelValue: !horse?.modelValue,
-        isProcessing: horse?.isProcessing,
-        isWaiting: horse?.isWaiting,
+        isProcessing: horse?.isProcessing ?? false,
+        isWaiting: horse?.isWaiting ?? false,
+        alreadyFinished: horse?.position !== undefined && horse.position >= 10,
       });
       return;
     }
@@ -182,8 +191,13 @@ function App() {
       const result = await response.json();
 
       setGameState((prev) => {
-        const newHorses = prev.horses.map((h) => {
+        const newHorses = prev.horses.map((h): Horse => {
           if (h.id === horseId) {
+            const currentHorse = prev.horses.find((ph) => ph.id === horseId)!;
+            if (currentHorse.position >= 10) {
+              return currentHorse;
+            }
+
             if (result.approved) {
               const newPosition = Math.min(h.position + 1, 10);
               return {
@@ -194,21 +208,30 @@ function App() {
                 finishTime: newPosition === 10 ? Date.now() : h.finishTime,
               };
             } else {
+              const currentPosition = h.position;
               setTimeout(() => {
                 setGameState((prevState) => ({
                   ...prevState,
-                  horses: prevState.horses.map((horse) =>
-                    horse.id === horseId
-                      ? {
-                          ...horse,
-                          position: Math.min(horse.position + 1, 10),
-                          isProcessing: false,
-                          isWaiting: false,
-                        }
-                      : horse
-                  ),
+                  horses: prevState.horses.map((horse) => {
+                    if (horse.id === horseId) {
+                      if (horse.position >= 10) {
+                        return horse;
+                      }
+                      return {
+                        ...horse,
+                        position: Math.min(currentPosition + 1, 10),
+                        isProcessing: false,
+                        isWaiting: false,
+                        finishTime:
+                          currentPosition + 1 === 10
+                            ? Date.now()
+                            : horse.finishTime,
+                      };
+                    }
+                    return horse;
+                  }),
                 }));
-              }, 10000);
+              }, 6000);
               return { ...h, isProcessing: false, isWaiting: true };
             }
           }
@@ -279,6 +302,18 @@ function App() {
       <CssBaseline />
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Stack spacing={3} alignItems="center">
+          <h1
+            style={{
+              color: darkTheme.palette.text.primary,
+              margin: 0,
+              marginBottom: "1rem",
+              fontSize: "2.5rem",
+              fontWeight: "bold",
+              textAlign: "center",
+            }}
+          >
+            Centaur: AI Horse Racing
+          </h1>
           <HorseSelector
             horses={gameState.horses}
             isRaceStarted={isRaceStarted}

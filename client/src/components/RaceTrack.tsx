@@ -7,15 +7,23 @@ const RaceTrackContainer = styled(Paper)(({ theme }) => ({
   gridTemplateColumns: "repeat(11, minmax(0, 1fr))",
   gridTemplateRows: "repeat(4, 1fr)",
   gap: 4,
-  padding: theme.spacing(2),
-  backgroundColor: theme.palette.background.paper,
+  backgroundColor: "rgba(54, 94, 50, 0.3)",
   marginBottom: theme.spacing(3),
   justifyContent: "center",
   alignItems: "center",
   width: "100%",
+  position: "relative",
   "& > *": {
     aspectRatio: "1 / 1",
   },
+  backgroundImage: `repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 25%,
+    rgba(255, 255, 255, 0.2) 25%,
+    rgba(255, 255, 255, 0.2) calc(25% + 1px)
+  )`,
+  backgroundSize: "100% 100%",
 }));
 
 const HorseCell = styled(Box)<{ $selected?: boolean }>(({ theme }) => ({
@@ -39,10 +47,10 @@ const HorseContent = styled(Box)({
 
 const SleepOverlay = styled(Box)({
   position: "absolute",
-  top: "-10%",
-  right: "-10%",
-  width: "40%",
-  height: "40%",
+  top: "-12%",
+  right: "-15%",
+  width: "50%",
+  height: "50%",
   backgroundColor: "#ffffff",
   borderRadius: "50%",
   display: "flex",
@@ -50,7 +58,7 @@ const SleepOverlay = styled(Box)({
   justifyContent: "center",
   border: "2px solid #e0e0e0",
   boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-  fontSize: "1em",
+  fontSize: "1.3em",
 });
 
 // const HorseName = styled(Box)({
@@ -60,6 +68,26 @@ const SleepOverlay = styled(Box)({
 //   textOverflow: "ellipsis",
 //   whiteSpace: "nowrap",
 // });
+
+const StartLine = styled(Box)({
+  position: "absolute",
+  left: "9%",
+  top: 0,
+  bottom: 0,
+  width: "4px",
+  background:
+    "repeating-linear-gradient(0deg, #000, #000 10px, #fff 10px, #fff 20px)",
+});
+
+const FinishLine = styled(Box)({
+  position: "absolute",
+  right: "9%",
+  top: 0,
+  bottom: 0,
+  width: "4px",
+  background:
+    "repeating-linear-gradient(0deg, #000, #000 10px, #fff 10px, #fff 20px)",
+});
 
 interface RaceTrackProps {
   horses: Horse[];
@@ -76,6 +104,8 @@ const RaceTrack: React.FC<RaceTrackProps> = ({ horses }) => {
 
   return (
     <RaceTrackContainer elevation={3}>
+      <StartLine />
+      <FinishLine />
       {horses.map((horse) => {
         let overlayIcon = null;
 
