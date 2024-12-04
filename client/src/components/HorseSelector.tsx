@@ -49,12 +49,12 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
               color: horse.color,
             }}
           >
-            Pick Jockey {horse.emoji}
+            Choose Jockey {horse.emoji}
           </InputLabel>
           <Select
             labelId={`horse-${horse.id}-label`}
             value={horse.modelValue}
-            label={`Pick Jockey ${horse.emoji}`}
+            label={`Choose Jockey ${horse.emoji}`}
             onChange={(e) => onNameChange(horse.id, e.target.value)}
             disabled={isRaceStarted}
             sx={{

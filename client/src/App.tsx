@@ -18,7 +18,7 @@ const darkTheme = createTheme({
   palette: {
     mode: "dark",
     primary: {
-      main: "#0F6292",
+      main: "#22577A",
     },
     background: {
       default: "#1a1a1a",
@@ -329,7 +329,7 @@ function App() {
               disabled={!canStartRace()}
               sx={{ mt: 2, textTransform: "none" }}
             >
-              Start Race
+              Begin Race 🏆
             </Button>
           )}
           {isRaceStarted && (
