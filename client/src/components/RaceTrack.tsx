@@ -59,27 +59,48 @@ interface RaceTrackProps {
   horses: Horse[];
 }
 
-const RaceTrack: React.FC<RaceTrackProps> = ({ horses }) => (
-  <RaceTrackContainer elevation={3}>
-    {horses.map((horse) => (
-      <HorseCell
-        key={horse.id}
-        sx={{
-          gridRow: horse.id,
-          gridColumn: horse.position + 1,
-          opacity: horse.isProcessing ? 0.5 : 1,
-          backgroundColor: `${horse.color}50`,
-          border: `2px solid ${horse.color}`,
-        }}
-      >
-        <HorseContent>
-          <Box sx={{ fontSize: "2em" }}>{horse.emoji}</Box>
-          {horse.isWaiting && <SleepOverlay>❌</SleepOverlay>}
-          {/* <HorseName>{horse.name || "Unnamed"}</HorseName> */}
-        </HorseContent>
-      </HorseCell>
-    ))}
-  </RaceTrackContainer>
-);
+const RaceTrack: React.FC<RaceTrackProps> = ({ horses }) => {
+  // Create a list of horses that have finished, sorted by finishTime
+  const finishedHorses = horses
+    .filter((horse) => horse.finishTime !== undefined)
+    .sort((a, b) => (a.finishTime || 0) - (b.finishTime || 0));
+
+  return (
+    <RaceTrackContainer elevation={3}>
+      {horses.map((horse) => {
+        let overlayIcon = null;
+
+        // Assign medals to the top three finishers
+        if (horse.position >= 10) {
+          const finishIndex = finishedHorses.findIndex(
+            (h) => h.id === horse.id
+          );
+          if (finishIndex === 0) overlayIcon = "🥇";
+          else if (finishIndex === 1) overlayIcon = "🥈";
+          else if (finishIndex === 2) overlayIcon = "🥉";
+        }
+
+        return (
+          <HorseCell
+            key={horse.id}
+            sx={{
+              gridRow: horse.id,
+              gridColumn: horse.position + 1,
+              opacity: horse.isProcessing ? 0.5 : 1,
+              backgroundColor: `${horse.color}50`,
+              border: `2px solid ${horse.color}`,
+            }}
+          >
+            <HorseContent>
+              <Box sx={{ fontSize: "2em" }}>{horse.emoji}</Box>
+              {horse.isWaiting && <SleepOverlay>❌</SleepOverlay>}
+              {overlayIcon && <SleepOverlay>{overlayIcon}</SleepOverlay>}
+            </HorseContent>
+          </HorseCell>
+        );
+      })}
+    </RaceTrackContainer>
+  );
+};
 
 export default RaceTrack;

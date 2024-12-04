@@ -185,14 +185,15 @@ function App() {
         const newHorses = prev.horses.map((h) => {
           if (h.id === horseId) {
             if (result.approved) {
+              const newPosition = Math.min(h.position + 1, 10);
               return {
                 ...h,
-                position: Math.min(h.position + 1, 10),
+                position: newPosition,
                 isProcessing: false,
                 isWaiting: false,
+                finishTime: newPosition === 10 ? Date.now() : h.finishTime,
               };
             } else {
-              // Set isWaiting to true and start a timeout
               setTimeout(() => {
                 setGameState((prevState) => ({
                   ...prevState,

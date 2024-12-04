@@ -18,12 +18,13 @@ export interface Answer {
 export interface Horse {
   id: number;
   emoji: string;
+  color: string;
   position: number;
   name: string;
-  color: string;
   modelValue: string;
   isProcessing?: boolean;
   isWaiting?: boolean;
+  finishTime?: number;
 }
 
 export interface GameState {
